@@ -3,6 +3,7 @@
 from torch import nn
 import torch.nn.functional as F
 
+
 class SimpleCNN(nn.Module):
     def __init__(self):
         super(SimpleCNN, self).__init__()
