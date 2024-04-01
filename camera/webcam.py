@@ -3,8 +3,18 @@ import torch
 import cv2
 
 import nn
-from nn.NNpredicer import predict
+from nn.nn_predicer import predict
 from settings import settings
+
+
+
+def frame_to_tensor(frame):
+
+    img = Image.fromarray(frame)
+    img = transform(img)
+
+    img_tensor = img.unsqueeze(0).to(device)
+    return img_tensor
 
 def start_webcam(idx_to_class):
     nn.net.load_state_dict(torch.load(settings.trained_model_path))
