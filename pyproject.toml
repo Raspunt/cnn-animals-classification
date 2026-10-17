@@ -1,0 +1,46 @@
+[project]
+name = "cnn-animals-classification"
+version = "0.1.0"
+description = "Animal image classification with PyTorch"
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "matplotlib>=3.9,<4",
+    "pillow>=11,<13",
+    "pydantic>=2.6,<3",
+    "pydantic-settings>=2.6,<3",
+    "python-dotenv>=1,<2",
+    "scikit-learn>=1.5,<2",
+    "sqlalchemy>=2,<3",
+    "torch>=2.6,<3",
+    "torchvision>=0.21,<1",
+]
+
+[project.optional-dependencies]
+postgres = ["psycopg2-binary>=2.9,<3"]
+webcam = ["opencv-python>=4.10,<5"]
+
+[dependency-groups]
+dev = ["pytest>=8,<10", "ruff>=0.9,<1"]
+
+[tool.uv]
+package = false
+
+[tool.uv.sources]
+torch = { index = "pytorch-cpu" }
+torchvision = { index = "pytorch-cpu" }
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.ruff]
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I"]

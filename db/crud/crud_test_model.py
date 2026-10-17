@@ -1,7 +1,7 @@
 from sqlalchemy import func
 
-from db.models import TestModel
 from db import session
+from db.models import TestModel
 
 
 class CrudTestModel:
@@ -42,6 +42,6 @@ class CrudTestModel:
     def get_best_accuracy() -> TestModel:
         stmt = session.query(func.max(TestModel.accuracy))
         max_accuracy = session.execute(stmt).scalar()
-        return session.query(TestModel).filter(TestModel.accuracy == max_accuracy).first()
-
-        
+        return (
+            session.query(TestModel).filter(TestModel.accuracy == max_accuracy).first()
+        )

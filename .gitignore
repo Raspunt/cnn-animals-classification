@@ -1,5 +1,9 @@
 data/
-__pycache__
+__pycache__/
+*.py[cod]
 out/
-venv
+venv/
+.venv/
+.pytest_cache/
+.ruff_cache/
 .env

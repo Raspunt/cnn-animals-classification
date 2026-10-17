@@ -1,6 +1,8 @@
-python main.py clear-test-data
-python main.py clear-traning-data
+#!/usr/bin/env bash
+set -euo pipefail
+cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.."
 
-python main.py train
-python main.py test
-
+uv run python main.py clear-test-data
+uv run python main.py clear-training-data
+uv run python main.py train
+uv run python main.py test

@@ -1,43 +1,77 @@
-from nn.dataset_reader import DatasetReader
-
-from db import Base, engine
-
-from commands.make_commands import make_commands
-from commands.shemas import CmdCommand
-from commands.cmd_views import CmdViews
-
-Base.metadata.create_all(engine)
-
-rd = DatasetReader()
-cmd_views = CmdViews()
+import argparse
 
 
-def nn_init():
-    (dataset, labels) = rd.read_datasets()
-    (train_dataset, test_dataset) = rd.test_train_dataset(dataset, labels)
-    return (train_dataset, test_dataset, dataset, labels)
+def build_parser():
+    parser = argparse.ArgumentParser(
+        description="Train and evaluate an animal classifier."
+    )
+    commands = parser.add_subparsers(dest="command", required=True)
+    commands.add_parser(
+        "train", help="Train and select the best epoch using validation data"
+    )
+    test = commands.add_parser("test", help="Evaluate the saved held-out test split")
+    test.add_argument("--model", help="Checkpoint path (default: out/best/trained.pth)")
+    predict = commands.add_parser("predict", help="Classify a single image")
+    predict.add_argument("image", help="Image path")
+    predict.add_argument(
+        "--model", help="Checkpoint path (default: out/best/trained.pth)"
+    )
+    webcam = commands.add_parser(
+        "webcam", help="Classify webcam frames (requires the webcam extra)"
+    )
+    webcam.add_argument(
+        "--model", help="Checkpoint path (default: out/best/trained.pth)"
+    )
+    commands.add_parser("clear-test-data", help="Delete test records from the database")
+    commands.add_parser(
+        "clear-training-data",
+        aliases=["clear-traning-data"],
+        help="Delete training records and experiment checkpoints; preserve the best model",
+    )
+    return parser
 
 
-def run():
-    (train_dataset, test_dataset, dataset, labels) = nn_init()
+def run(argv=None):
+    parser = build_parser()
+    args = parser.parse_args(argv)
+    try:
+        if args.command == "predict":
+            from PIL import Image
 
-    train_command = CmdCommand("train", lambda: cmd_views.train(
-        train_dataset, dataset, labels), "start training of neural network")
-    test_command = CmdCommand("test", lambda: cmd_views.test(
-        test_dataset), "start test of experiments")
+            from nn import transform
+            from nn.nn_file_manager import NNFileManager
+            from nn.nn_predicer import predict
 
-    clear_test_command = CmdCommand(
-        'clear-test-data', cmd_views.clear_test_data, 'clear all data from test from database')
-    clear_traning_command = CmdCommand(
-        'clear-traning-data', cmd_views.clear_test_data, 'clear all data from traning from database and folders')
+            model, checkpoint = NNFileManager().load_nn(args.model)
+            with Image.open(args.image) as image:
+                prediction = predict(
+                    transform(image.convert("RGB")), checkpoint["classes"], model
+                )
+            print(f"Predicted class: {prediction.label}")
+            print(f"Model confidence (softmax): {100 * prediction.confidence:.2f}%")
+            print("Confidence is not measured accuracy or visual similarity.")
+            for name, probability in sorted(
+                prediction.probabilities.items(), key=lambda item: -item[1]
+            ):
+                print(f"  {name}: {100 * probability:.2f}%")
+            return
+        if args.command == "webcam":
+            from camera.webcam import start_webcam
 
-    commands = [
-        train_command,
-        test_command,
-        clear_test_command,
-        clear_traning_command
-    ]
+            start_webcam(args.model)
+            return
+        from commands.cmd_views import CmdViews
+        from db import init_db
 
-    
-
-    make_commands(commands)
+        init_db()
+        views = CmdViews()
+        if args.command == "train":
+            views.train()
+        elif args.command == "test":
+            views.test(args.model)
+        elif args.command == "clear-test-data":
+            views.clear_test_data()
+        else:
+            views.clear_train_data()
+    except (FileNotFoundError, ValueError) as error:
+        parser.error(str(error))

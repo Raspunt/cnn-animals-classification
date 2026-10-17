@@ -1,36 +1,36 @@
+from PIL import Image
 
-import torch
-import cv2
-
-import nn
+from nn import transform
+from nn.nn_file_manager import NNFileManager
 from nn.nn_predicer import predict
-from settings import settings
-
 
 
 def frame_to_tensor(frame):
+    import cv2
 
-    img = Image.fromarray(frame)
-    img = transform(img)
+    image = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+    return transform(image).unsqueeze(0)
 
-    img_tensor = img.unsqueeze(0).to(device)
-    return img_tensor
 
-def start_webcam(idx_to_class):
-    nn.net.load_state_dict(torch.load(settings.trained_model_path))
-    vid = cv2.VideoCapture(0)
-
-    while (True):
-
-        ret, frame = vid.read()
-        tensor = nn.frame_to_tensor(frame)
-        class_prediction = predict(tensor, idx_to_class)
-        print(class_prediction)
-
-        cv2.imshow('frame', frame)
-
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
-
-    vid.release()
-    cv2.destroyAllWindows()
+def start_webcam(model_path=None):
+    try:
+        import cv2
+    except ImportError as error:
+        raise ValueError("Webcam support requires: uv sync --extra webcam") from error
+    model, checkpoint = NNFileManager().load_nn(model_path)
+    video = cv2.VideoCapture(0)
+    try:
+        if not video.isOpened():
+            raise ValueError("Cannot open webcam 0.")
+        while True:
+            success, frame = video.read()
+            if not success:
+                break
+            prediction = predict(frame_to_tensor(frame), checkpoint["classes"], model)
+            print(f"{prediction.label}: confidence {100 * prediction.confidence:.2f}%")
+            cv2.imshow("Animal classifier (q to quit)", frame)
+            if cv2.waitKey(1) & 0xFF == ord("q"):
+                break
+    finally:
+        video.release()
+        cv2.destroyAllWindows()

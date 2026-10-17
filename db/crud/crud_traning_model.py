@@ -1,5 +1,5 @@
-from db.models import TrainingModel
 from db import session
+from db.models import TrainingModel
 
 
 class CrudTrainingModel:
@@ -18,8 +18,7 @@ class CrudTrainingModel:
 
     @staticmethod
     def update_training(id, training):
-        to_update = session.query(TrainingModel).filter(
-            TrainingModel.id == id).first()
+        to_update = session.query(TrainingModel).filter(TrainingModel.id == id).first()
         to_update.name = training.name
         to_update.start_time = training.start_time
         to_update.end_time = training.end_time
@@ -32,8 +31,7 @@ class CrudTrainingModel:
 
     @staticmethod
     def delete_training(id):
-        to_delete = session.query(TrainingModel).filter(
-            TrainingModel.id == id).first()
+        to_delete = session.query(TrainingModel).filter(TrainingModel.id == id).first()
         session.delete(to_delete)
         session.commit()
 
